@@ -1,0 +1,17 @@
+{
+  "name": "posterbot",
+  "version": "1.0.0",
+  "description": "A bot to automatically duplicate posts between twitter and facebook",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.0.0-alpha.7"
+  }
+}
