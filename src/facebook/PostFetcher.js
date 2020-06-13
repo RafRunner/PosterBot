@@ -3,11 +3,15 @@ const { getDriver } = require('../webdriver/webdriver');
 const Post = require('./Post');
 
 class PostFetcher {
+  static expectedStopReasons = ['stopConditionMet', 'noMorePreLoadedPosts', 'reachedNonLoadedPosts'];
+
   constructor(pageURL) {
     return new Promise(async (resolve, reject) => {
       try {
         this.driver = await getDriver();
         await this.driver.get(pageURL);
+        // Time for the posts to load
+        await this.driver.sleep(1000);
       } catch (ex) {
         return reject(ex);
       }
@@ -15,61 +19,52 @@ class PostFetcher {
     });
   }
 
-  async getWindowHeighAndY() {
-    const rect = await this.driver.manage().window().getRect();
-    return { height: rect.height, y: rect.y };
-  }
-
-  async webElementIsOnScreen(webElement) {
-    const windowVerticalPos = await this.getWindowHeighAndY();
-    const elementRect = await webElement.getRect();
-
-    return elementRect.y - (windowVerticalPos.height + windowVerticalPos.y) < 0;
-  }
-
-  async fetchMostRecentPosts(stopCondition) {
+  async fetchLoadedPosts(lastPostLoaded, stopCondition) {
     const driver = this.driver;
     const posts = [];
+    let stopReason = 'stopConditionMet';
 
     try {
-      const posts = await driver.findElements(By.className('_1dwg _1w_m _q7o'));
+      const postsElements = await driver.findElements(By.className('_1dwg _1w_m _q7o'));
+      const nPreLoadedPosts = postsElements.length;
 
-      for (var i = 0; i < 3; i++) {
-        const post = posts[i];
-        const textElement = post.findElement(By.css('p'));
-        const imageElement = post.findElement(By.className('scaledImageFitWidth img'));
+      let i = 0;
+      while (true) {
+        if (i == nPreLoadedPosts) {
+          stopReason = 'noMorePreLoadedPosts';
+          break;
+        }
 
-        console.log('Text: ', await textElement.getText());
-        console.log('Image: ', await imageElement.getAttribute('src'));
-        console.log('\n');
+        const postElement = postsElements[i];
+
+        try {
+          const postIdElement = await postElement.findElement(By.className('_5pcp _5lel _2jyu _232_'));
+          const postId = await postIdElement.getAttribute('id');
+
+          if (lastPostLoaded && lastPostLoaded.id != postId) {
+            continue;
+          }
+
+          const textElement = await postElement.findElement(By.css('p'));
+          const imageElement = await postElement.findElement(By.className('scaledImageFitWidth img'));
+
+          const post = new Post(postId, await textElement.getText(), await imageElement.getAttribute('src'));
+          posts.push(post);
+
+          if (stopCondition(post)) {
+            break;
+          }
+        } catch {
+          stopReason = 'reachedNonLoadedPosts';
+          break;
+        }
+        i++;
       }
     } catch (e) {
-      console.log('Pipocou:');
       console.log(e);
+      stopReason = e.message;
     } finally {
-      return posts;
-    }
-  }
-
-  async loadPostInCurrentPage(lastPostLoaded) {
-    try {
-      const posts = await driver.findElements(By.className('_1dwg _1w_m _q7o'));
-
-      for (var i = 0; i < 3; i++) {
-        const post = posts[i];
-        const textElement = post.findElement(By.css('p'));
-        const imageElement = post.findElement(By.className('scaledImageFitWidth img'));
-        const postId = await post.findElement(By.className('_5pcp _5lel _2jyu _232_'));
-
-        console.log('Text: ', await textElement.getText());
-        console.log('Image: ', await imageElement.getAttribute('src'));
-        console.log('\n');
-      }
-    } catch (e) {
-      console.log('Pipocou:');
-      console.log(e);
-    } finally {
-      return posts;
+      return { posts, stopReason };
     }
   }
 }
