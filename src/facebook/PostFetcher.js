@@ -45,10 +45,26 @@ class PostFetcher {
             continue;
           }
 
-          const textElement = await postElement.findElement(By.css('p'));
-          const imageElement = await postElement.findElement(By.className('scaledImageFitWidth img'));
+          let postText = '';
+          postElement
+            .findElement(By.css('p'))
+            .getText()
+            .then((text) => (postText = text))
+            .catch();
 
-          const post = new Post(postId, await textElement.getText(), await imageElement.getAttribute('src'));
+          let postImage = '';
+          postElement
+            .findElement(By.className('scaledImageFitWidth img'))
+            .getAttribute('src')
+            .then((image) => (postImage = Image))
+            .catch();
+
+          if (postText === '' && postImage === '') {
+            stopReason = 'reachedNonLoadedPosts';
+            break;
+          }
+
+          const post = new Post(postId, postText, postImage);
           posts.push(post);
 
           if (stopCondition(post)) {

@@ -1,9 +1,12 @@
-const { By, Key, until } = require('selenium-webdriver');
-const { getDriver, quitDriver } = require('./webdriver/webdriver');
+const { quitDriver } = require('./webdriver/webdriver');
 const PostFetcher = require('./facebook/PostFetcher');
-const { post } = require('selenium-webdriver/http');
+const Bot = require('./twitter/Bot');
+const schedule = require('node-schedule');
 
-(async function example() {
+const j = schedule.scheduleJob('30 12 * * *', async (fireDate) => {
+  console.log('Starting post cloning job at: ' + fireDate);
+  console.log('Starting facebook bot and fetching posts...');
+
   try {
     const postFetcher = await new PostFetcher('https://www.facebook.com/pg/memesbocamole/posts/?ref=page_internal');
     const posts = await postFetcher.fetchLoadedPosts(null, (_post) => false);
@@ -14,4 +17,4 @@ const { post } = require('selenium-webdriver/http');
   } finally {
     await quitDriver();
   }
-})();
+});

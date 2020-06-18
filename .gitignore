@@ -1,2 +1,4 @@
 /node_modules/
-/auth/
+/src/auth/twitterTokens.js
+debug.log
+/src/database/db.sqlite
