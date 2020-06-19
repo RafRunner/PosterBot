@@ -6,7 +6,7 @@ exports.up = function (knex) {
     table.string('image_url');
 
     table.integer('page_id').notNullable();
-    table.foreign('page_id').references('page.id').onDelete('CASCADE');
+    table.foreign('page_id').references('pages.id').onDelete('CASCADE');
   });
 };
 

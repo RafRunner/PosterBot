@@ -1,21 +1,16 @@
-const serviceHelper = require('./serviceHelper');
+const connection = require('../database/connection');
 
 const postsTable = 'posts';
 
 module.exports = {
-  async get(id) {
-    return serviceHelper.get(id, postsTable);
+  async exists(post, page) {
+    const exists = await connection(postsTable).where({ element_id: post.elementId, page_id: page.id }).select('id').first();
+    return exists && true;
   },
 
-  async create(post) {
-    return serviceHelper.create(post, postsTable);
-  },
-
-  async exists(id) {
-    return serviceHelper.exists(id, postsTable);
-  },
-
-  async delete(id) {
-    return serviceHelper.delete(id, postsTable);
+  async create(post, page) {
+    const dbPost = { element_id: post.elementId, text: post.text, image_url: post.imageURLs, page_id: page.id };
+    const [id] = await connection(postsTable).insert(dbPost);
+    return id;
   },
 };

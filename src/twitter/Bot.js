@@ -8,64 +8,61 @@ class Bot {
     this.twitter = new Twit(tokens);
   }
 
-  authenticate() {
-    this.twitter.get(
-      'account/verify_credentials',
-      {
-        include_entities: false,
-        skip_status: true,
-        include_email: false,
-      },
-      (err, res) => {
-        if (err) {
-          console.log('Error authenticating bot');
-          throw err;
-        }
-        console.log('Authentication successful. Running bot...\n');
-      }
-    );
-  }
-
-  post(post) {
-    const params = {};
-
-    if (post.imageURL !== '') {
-      params.media_ids = [this.uploadMidia(post)];
-    }
-
-    params.status = post.text;
-    this.twitter.post('statuses/update', params, (err, data, response) => {
-      if (err) {
-        console.log('Error posting twett from post: ' + post.elementId);
-        throw err;
-      }
-      console.log('Post: ' + post.elementId + ' twetted successfully');
-    })
-  }
-
-  uploadMidia(post) {
-    const b64content = post.getEncoded64Image();
-    const mediaId;
-
-    this.twitter.post('media/upload', { media_data: b64content }, (err, data, response) => {
-      if (err) {
-        console.log('Error uploading post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
-        throw err;
-      }
-      const mediaIdStr = data.media_id_string;
-      const meta_params = { media_id: mediaIdStr, alt_text: { text: '' } };
-
-      this.twitter.post('media/metadata/create', meta_params, (err, data, response) => {
-        if (err) {
-          console.log('Error creating post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
-          throw err;
-        }
-        
-        mediaId = mediaIdStr;
-      });
+  async authenticate() {
+    const { err, res } = await this.twitter.get('account/verify_credentials', {
+      include_entities: false,
+      skip_status: true,
+      include_email: false,
     });
 
-    return mediaId;
+    if (err) {
+      console.log('Error authenticating bot');
+      throw err;
+    }
+    console.log('Authentication successful. Running bot...\n');
+  }
+
+  async post(post) {
+    const params = { status: post.text };
+
+    if (post.imageURL !== '') {
+      params.media_ids = await this.uploadMedias(post);
+    }
+
+    const { err, data, response } = await this.twitter.post('statuses/update', params);
+    if (err) {
+      throw err;
+    }
+  }
+
+  async uploadMedias(post) {
+    const mediaIds = [];
+
+    const b64images = await post.getEncoded64Images();
+
+    for (const b64content of b64images) {
+      const mediaUploadResponse = await this.twitter.post('media/upload', { media_data: b64content });
+      if (mediaUploadResponse.err) {
+        console.log('Error uploading post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
+        throw mediaUploadResponse.err;
+      }
+
+      const mediaIdStr = mediaUploadResponse.data.media_id_string;
+      const meta_params = { media_id: mediaIdStr };
+      await this.createMedia(meta_params);
+
+      mediaIds.push(mediaIdStr);
+    }
+
+    return mediaIds;
+  }
+
+  async createMedia(meta_params) {
+    const mediaCreateResponse = await this.twitter.post('media/metadata/create', meta_params);
+    if (mediaCreateResponse.err) {
+      console.log('Error creating post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
+      throw mediaCreateResponse.err;
+    }
   }
 }
 

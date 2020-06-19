@@ -3,8 +3,6 @@ const { getDriver } = require('../webdriver/webdriver');
 const Post = require('./Post');
 
 class PostFetcher {
-  static expectedStopReasons = ['stopConditionMet', 'noMorePreLoadedPosts', 'reachedNonLoadedPosts'];
-
   constructor(pageURL) {
     return new Promise(async (resolve, reject) => {
       try {
@@ -19,68 +17,64 @@ class PostFetcher {
     });
   }
 
-  async fetchLoadedPosts(lastPostLoaded, stopCondition) {
-    const driver = this.driver;
+  async loadPostImages(postElement) {
+    const imageElements = await postElement.findElements(By.css('img'));
+    let imageURLs = '';
+
+    for (let i = 1; i < imageElements.length && i < 5; i++) {
+      const imageURL = await imageElements[i].getAttribute('src');
+      imageURLs += imageURL + ',';
+    }
+
+    return imageURLs;
+  }
+
+  async scrollToPost(postElement) {
+    await this.driver.executeScript('arguments[0].scrollIntoView(true);', postElement);
+    await this.driver.sleep(1000);
+  }
+
+  async fetchLoadedPosts(stopCondition) {
     const posts = [];
-    let stopReason = 'stopConditionMet';
 
     try {
-      const postsElements = await driver.findElements(By.className('_1dwg _1w_m _q7o'));
-      const nPreLoadedPosts = postsElements.length;
+      let postElements = await this.driver.findElements(By.className('_1dwg _1w_m _q7o'));
+      const nPreLoadedPosts = postElements.length;
 
       let i = 0;
-      while (true) {
-        if (i == nPreLoadedPosts) {
-          stopReason = 'noMorePreLoadedPosts';
-          break;
+      while (i < nPreLoadedPosts) {
+        if (i !== 0) {
+          await this.scrollToPost(postElements[i]);
+          postElements = await this.driver.findElements(By.className('_1dwg _1w_m _q7o'));
         }
 
-        const postElement = postsElements[i];
+        const postElement = postElements[i];
+
+        const postIdElement = await postElement.findElement(By.className('_5pcp _5lel _2jyu _232_'));
+        const postId = await postIdElement.getAttribute('id');
 
         try {
-          const postIdElement = await postElement.findElement(By.className('_5pcp _5lel _2jyu _232_'));
-          const postId = await postIdElement.getAttribute('id');
+          const textElement = await postElement.findElement(By.css('p'));
+          const postImages = await this.loadPostImages(postElement);
 
-          if (lastPostLoaded && lastPostLoaded.id != postId) {
-            continue;
-          }
+          const post = new Post(postId, await textElement.getText(), postImages);
 
-          let postText = '';
-          postElement
-            .findElement(By.css('p'))
-            .getText()
-            .then((text) => (postText = text))
-            .catch();
-
-          let postImage = '';
-          postElement
-            .findElement(By.className('scaledImageFitWidth img'))
-            .getAttribute('src')
-            .then((image) => (postImage = Image))
-            .catch();
-
-          if (postText === '' && postImage === '') {
-            stopReason = 'reachedNonLoadedPosts';
+          if (stopCondition(post, i)) {
             break;
           }
-
-          const post = new Post(postId, postText, postImage);
+          console.log('Post: ' + postId + ' on index ' + i + ' fetched successfully\n');
           posts.push(post);
-
-          if (stopCondition(post)) {
-            break;
-          }
         } catch {
-          stopReason = 'reachedNonLoadedPosts';
-          break;
+          console.log('Failled to load elements of post: ' + postId + ' on index ' + i + '\n');
+          continue;
+        } finally {
+          i++;
         }
-        i++;
       }
     } catch (e) {
       console.log(e);
-      stopReason = e.message;
     } finally {
-      return { posts, stopReason };
+      return posts.reverse();
     }
   }
 }
