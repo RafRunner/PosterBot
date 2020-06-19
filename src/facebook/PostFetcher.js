@@ -9,7 +9,7 @@ class PostFetcher {
         this.driver = await getDriver();
         await this.driver.get(pageURL);
         // Time for the posts to load
-        await this.driver.sleep(1000);
+        await this.driver.sleep(3000);
       } catch (ex) {
         return reject(ex);
       }
@@ -31,7 +31,7 @@ class PostFetcher {
 
   async scrollToPost(postElement) {
     await this.driver.executeScript('arguments[0].scrollIntoView(true);', postElement);
-    await this.driver.sleep(1000);
+    await this.driver.sleep(3000);
   }
 
   async fetchLoadedPosts(stopCondition) {

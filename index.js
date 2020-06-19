@@ -32,9 +32,14 @@ async function cloningPostsJob(fireDate) {
       const postFetcher = await new PostFetcher(facebookPage);
       const newPosts = await postFetcher.fetchLoadedPosts((post, i) => lastPostOnDatabase.equals(post));
 
+      if (newPosts.length === 0) {
+        console.log('No posts were fetched to clone on twitter\n');
+        return;
+      }
+
       const twitterBot = new Bot();
       await twitterBot.authenticate();
-      console.log('Starting to twett facebook posts on twitter\n');
+      console.log('Starting to tweet facebook posts on twitter\n');
 
       for (const newPost of newPosts) {
         if (await postService.exists(newPost, page)) {
@@ -45,7 +50,7 @@ async function cloningPostsJob(fireDate) {
         console.log('Posting post: ' + newPost.elementId + ' on Twitter');
         try {
           await twitterBot.post(newPost);
-          console.log('Post: ' + newPosts.elementId + ' twetted successfully\n');
+          console.log('Post: ' + newPost.elementId + ' twetted successfully\n');
           await postService.create(newPost, page);
         } catch (e) {
           console.log('Error posting post: ' + newPost.elementId + ' on twitter, continuing\n');

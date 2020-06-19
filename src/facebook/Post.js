@@ -8,12 +8,12 @@ class Post {
   }
 
   equals(o) {
-    return TransitionEvent.elementId === o.elementId;
+    return this.elementId === o.elementId;
   }
 
   async getEncoded64Images() {
     if (this.imageURLs === '') {
-      throw new Error('Post: ' + this.elementId + ' has no image to be fetched');
+      return [];
     }
     const URLs = [];
 
