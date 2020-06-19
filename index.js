@@ -1,7 +1,6 @@
 const { quitDriver } = require('./src/webdriver/webdriver');
 const PostFetcher = require('./src/facebook/PostFetcher');
 const Bot = require('./src/twitter/Bot');
-const schedule = require('node-schedule');
 const pageService = require('./src/services/pageService');
 const postService = require('./src/services/postService');
 
@@ -28,13 +27,16 @@ async function cloningPostsJob(fireDate) {
         page = await pageService.getFromUrl(facebookPage);
       }
 
+      const lastPostOnDatabase = await postService.getLastPostFromPage(page);
+
       const postFetcher = await new PostFetcher(facebookPage);
-      const newPosts = await postFetcher.fetchLoadedPosts((post, i) => false);
+      const newPosts = await postFetcher.fetchLoadedPosts((post, i) => lastPostOnDatabase.equals(post));
 
       const twitterBot = new Bot();
       await twitterBot.authenticate();
+      console.log('Starting to twett facebook posts on twitter\n');
 
-      for (newPost of newPosts) {
+      for (const newPost of newPosts) {
         if (await postService.exists(newPost, page)) {
           console.log('Post: ' + newPost.elementId + ' has already been cloned, continuing');
           continue;
@@ -43,7 +45,7 @@ async function cloningPostsJob(fireDate) {
         console.log('Posting post: ' + newPost.elementId + ' on Twitter');
         try {
           await twitterBot.post(newPost);
-          console.log('Post: ' + post.elementId + ' twetted successfully\n');
+          console.log('Post: ' + newPosts.elementId + ' twetted successfully\n');
           await postService.create(newPost, page);
         } catch (e) {
           console.log('Error posting post: ' + newPost.elementId + ' on twitter, continuing\n');
@@ -60,14 +62,4 @@ async function cloningPostsJob(fireDate) {
   }
 }
 
-//const j = schedule.scheduleJob('30 12 * * *', (fireDate) => cloningPostsJob(fireDate));
 cloningPostsJob(new Date());
-async () => {
-  try {
-    const postFetcher = await new PostFetcher(facebookPage);
-    const newPosts = await postFetcher.fetchLoadedPosts((post, i) => false);
-    console.log(newPosts);
-  } finally {
-    await quitDriver();
-  }
-};

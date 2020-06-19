@@ -7,6 +7,10 @@ class Post {
     this.imageURLs = imageURLs;
   }
 
+  equals(o) {
+    return TransitionEvent.elementId === o.elementId;
+  }
+
   async getEncoded64Images() {
     if (this.imageURLs === '') {
       throw new Error('Post: ' + this.elementId + ' has no image to be fetched');

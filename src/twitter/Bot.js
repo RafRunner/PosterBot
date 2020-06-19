@@ -16,10 +16,10 @@ class Bot {
     });
 
     if (err) {
-      console.log('Error authenticating bot');
+      console.log('Error authenticating twitter bot');
       throw err;
     }
-    console.log('Authentication successful. Running bot...\n');
+    console.log('Authentication successful. Running twitter bot...\n');
   }
 
   async post(post) {
