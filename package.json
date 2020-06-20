@@ -4,7 +4,7 @@
   "description": "A bot to automatically duplicate posts between twitter and facebook",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js https://www.facebook.com/pg/colecionadoreshitpost/posts/?ref=page_internal"
+    "start": "node index.js https://pt-br.facebook.com/pg/EtlandiaIV/posts/?ref=page_internal"
   },
   "author": "",
   "license": "MIT",

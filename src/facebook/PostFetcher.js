@@ -31,7 +31,7 @@ class PostFetcher {
 
   async scrollToPost(postElement) {
     await this.driver.executeScript('arguments[0].scrollIntoView(true);', postElement);
-    await this.driver.sleep(3000);
+    await this.driver.sleep(10000);
   }
 
   async fetchLoadedPosts(stopCondition) {
@@ -40,39 +40,46 @@ class PostFetcher {
     try {
       let postElements = await this.driver.findElements(By.className('_1dwg _1w_m _q7o'));
       const nPreLoadedPosts = postElements.length;
+      await this.scrollToPost(postElements[nPreLoadedPosts - 1]);
 
       let i = 0;
       while (i < nPreLoadedPosts) {
-        if (i !== 0) {
-          await this.scrollToPost(postElements[i]);
-          postElements = await this.driver.findElements(By.className('_1dwg _1w_m _q7o'));
-        }
-
         const postElement = postElements[i];
 
         const postIdElement = await postElement.findElement(By.className('_5pcp _5lel _2jyu _232_'));
         const postId = await postIdElement.getAttribute('id');
 
         try {
-          const textElement = await postElement.findElement(By.css('p'));
+          let postText;
+          postElement
+            .findElement(By.css('p'))
+            .getText()
+            .then((text) => (postText = text))
+            .catch(() => (postText = ''));
           const postImages = await this.loadPostImages(postElement);
 
-          const post = new Post(postId, await textElement.getText(), postImages);
+          if (!postText && !postImages) {
+            continue;
+          }
+
+          const post = new Post(postId, postText, postImages);
 
           if (stopCondition(post, i)) {
+            console.log('Post: ' + postId + ' on index ' + i + ' has no fetchable content\n');
             break;
           }
           console.log('Post: ' + postId + ' on index ' + i + ' fetched successfully\n');
           posts.push(post);
         } catch {
-          console.log('Failled to load elements of post: ' + postId + ' on index ' + i + '\n');
+          console.log('Failled to load elements of post: ' + postId + ' on index ' + i);
+          console.log(e, '\n');
           continue;
         } finally {
           i++;
         }
       }
     } catch (e) {
-      console.log(e);
+      console.log('Error loading post elements: ', e);
     } finally {
       return posts.reverse();
     }

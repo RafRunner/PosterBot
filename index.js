@@ -27,10 +27,8 @@ async function cloningPostsJob(fireDate) {
         page = await pageService.getFromUrl(facebookPage);
       }
 
-      const lastPostOnDatabase = await postService.getLastPostFromPage(page);
-
       const postFetcher = await new PostFetcher(facebookPage);
-      const newPosts = await postFetcher.fetchLoadedPosts((post, i) => lastPostOnDatabase.equals(post));
+      const newPosts = await postFetcher.fetchLoadedPosts((post, i) => false);
 
       if (newPosts.length === 0) {
         console.log('No posts were fetched to clone on twitter\n');
@@ -42,16 +40,20 @@ async function cloningPostsJob(fireDate) {
       console.log('Starting to tweet facebook posts on twitter\n');
 
       for (const newPost of newPosts) {
-        if (await postService.exists(newPost, page)) {
-          console.log('Post: ' + newPost.elementId + ' has already been cloned, continuing');
-          continue;
+        const dbPost = await postService.get(newPost, page);
+        if (dbPost && dbPost.tweet_id) {
+          if (await twitterBot.tweetExists(dbPost.tweet_id)) {
+            console.log('Post: ' + newPost.elementId + ' has already been cloned and still exists, continuing\n');
+            continue;
+          }
         }
 
         console.log('Posting post: ' + newPost.elementId + ' on Twitter');
         try {
-          await twitterBot.post(newPost);
+          const tweetId = await twitterBot.post(newPost);
           console.log('Post: ' + newPost.elementId + ' twetted successfully\n');
-          await postService.create(newPost, page);
+          const postId = await postService.create(newPost, page);
+          await postService.updateTweetId(postId, tweetId);
         } catch (e) {
           console.log('Error posting post: ' + newPost.elementId + ' on twitter, continuing\n');
           console.log(e);

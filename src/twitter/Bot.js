@@ -29,10 +29,23 @@ class Bot {
       params.media_ids = await this.uploadMedias(post);
     }
 
-    const { err, data, response } = await this.twitter.post('statuses/update', params);
+    const { err, data } = await this.twitter.post('statuses/update', params);
     if (err) {
       throw err;
     }
+
+    return data.id_str;
+  }
+
+  async tweetExists(tweetId) {
+    const params = { id: tweetId, map: true };
+
+    const { err, data } = await this.twitter.post('statuses/lookup', params);
+    if (err) {
+      throw err;
+    }
+
+    return data.id[tweetId];
   }
 
   async uploadMedias(post) {
