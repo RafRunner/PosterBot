@@ -51,7 +51,7 @@ class PostFetcher {
 
         try {
           let postText;
-          postElement
+          await postElement
             .findElement(By.css('p'))
             .getText()
             .then((text) => (postText = text))
@@ -59,19 +59,20 @@ class PostFetcher {
           const postImages = await this.loadPostImages(postElement);
 
           if (!postText && !postImages) {
+            console.log('Post: ' + postId + ' on index ' + i + ' has no fetchable content\n');
             continue;
           }
 
           const post = new Post(postId, postText, postImages);
 
           if (stopCondition(post, i)) {
-            console.log('Post: ' + postId + ' on index ' + i + ' has no fetchable content\n');
+            console.log('Stop condition met on post: ' + postId + ' on index ' + i + '\n');
             break;
           }
           console.log('Post: ' + postId + ' on index ' + i + ' fetched successfully\n');
           posts.push(post);
         } catch {
-          console.log('Failled to load elements of post: ' + postId + ' on index ' + i);
+          console.log('Failled to load elements of post: ' + postId + ' on index ' + i + '\n');
           console.log(e, '\n');
           continue;
         } finally {
