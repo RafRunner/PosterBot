@@ -41,11 +41,9 @@ async function cloningPostsJob(fireDate) {
 
       for (const newPost of newPosts) {
         const dbPost = await postService.get(newPost, page);
-        if (dbPost && dbPost.tweet_id) {
-          if (await twitterBot.tweetExists(dbPost.tweet_id)) {
-            console.log('Post: ' + newPost.elementId + ' has already been cloned and still exists, continuing\n');
-            continue;
-          }
+        if (dbPost && dbPost.tweet_id && (await twitterBot.tweetExists(dbPost.tweet_id))) {
+          console.log('Post: ' + newPost.elementId + ' has already been cloned and still exists, continuing\n');
+          continue;
         }
 
         console.log('Posting post: ' + newPost.elementId + ' on Twitter');
