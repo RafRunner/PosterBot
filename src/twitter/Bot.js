@@ -55,6 +55,7 @@ class Bot {
 
     for (const b64content of b64images) {
       const mediaUploadResponse = await this.twitter.post('media/upload', { media_data: b64content });
+
       if (mediaUploadResponse.err) {
         console.log('Error uploading post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
         throw mediaUploadResponse.err;
@@ -72,6 +73,7 @@ class Bot {
 
   async createMedia(meta_params) {
     const mediaCreateResponse = await this.twitter.post('media/metadata/create', meta_params);
+
     if (mediaCreateResponse.err) {
       console.log('Error creating post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
       throw mediaCreateResponse.err;

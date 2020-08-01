@@ -42,8 +42,7 @@ class PostFetcher {
       const nPreLoadedPosts = postElements.length;
       await this.scrollToPost(postElements[nPreLoadedPosts - 1]);
 
-      let i = 0;
-      while (i < nPreLoadedPosts) {
+      for (let i = 0; i < nPreLoadedPosts; i++) {
         const postElement = postElements[i];
 
         const postIdElement = await postElement.findElement(By.className('_5pcp _5lel _2jyu _232_'));
@@ -69,14 +68,13 @@ class PostFetcher {
             console.log('Stop condition met on post: ' + postId + ' on index ' + i + '\n');
             break;
           }
+
           console.log('Post: ' + postId + ' on index ' + i + ' fetched successfully\n');
           posts.push(post);
         } catch {
           console.log('Failled to load elements of post: ' + postId + ' on index ' + i + '\n');
           console.log(e, '\n');
           continue;
-        } finally {
-          i++;
         }
       }
     } catch (e) {

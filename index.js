@@ -18,8 +18,10 @@ async function cloningPostsJob(fireDate) {
   try {
     await (async () => {
       let page = await pageService.getFromUrl(facebookPage);
+
       if (!page) {
         console.log('Registering page: ' + facebookPage + ' in the database');
+
         if (!(await pageService.create(facebookPage))) {
           console.log('Error registering page: ' + facebookPage + ' in the database, finishing job');
           return;
@@ -41,12 +43,14 @@ async function cloningPostsJob(fireDate) {
 
       for (const newPost of newPosts) {
         const dbPost = await postService.get(newPost, page);
+
         if (dbPost && dbPost.tweet_id && (await twitterBot.tweetExists(dbPost.tweet_id))) {
           console.log('Post: ' + newPost.elementId + ' has already been cloned and still exists, continuing\n');
           continue;
         }
 
         console.log('Posting post: ' + newPost.elementId + ' on Twitter');
+
         try {
           const tweetId = await twitterBot.post(newPost);
           console.log('Post: ' + newPost.elementId + ' twetted successfully\n');
