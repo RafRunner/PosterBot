@@ -9,16 +9,17 @@ class Bot {
   }
 
   async authenticate() {
-    const { err, res } = await this.twitter.get('account/verify_credentials', {
-      include_entities: false,
-      skip_status: true,
-      include_email: false,
-    });
+    const { res } = await this.twitter
+      .get('account/verify_credentials', {
+        include_entities: false,
+        skip_status: true,
+        include_email: false,
+      })
+      .catch((err) => {
+        console.log('Error authenticating twitter bot');
+        throw err;
+      });
 
-    if (err) {
-      console.log('Error authenticating twitter bot');
-      throw err;
-    }
     console.log('Authentication successful. Running twitter bot...\n');
   }
 
@@ -29,10 +30,9 @@ class Bot {
       params.media_ids = await this.uploadMedias(post);
     }
 
-    const { err, data } = await this.twitter.post('statuses/update', params);
-    if (err) {
+    const { data } = await this.twitter.post('statuses/update').catch((err) => {
       throw err;
-    }
+    });
 
     return data.id_str;
   }
@@ -40,10 +40,9 @@ class Bot {
   async tweetExists(tweetId) {
     const params = { id: tweetId, map: true };
 
-    const { err, data } = await this.twitter.post('statuses/lookup', params);
-    if (err) {
+    const { data } = await this.twitter.post('statuses/lookup', params).catch((err) => {
       throw err;
-    }
+    });
 
     return data.id[tweetId];
   }
@@ -54,14 +53,12 @@ class Bot {
     const b64images = await post.getEncoded64Images();
 
     for (const b64content of b64images) {
-      const mediaUploadResponse = await this.twitter.post('media/upload', { media_data: b64content });
-
-      if (mediaUploadResponse.err) {
+      const { data } = await this.twitter.post('media/upload', { media_data: b64content }).catch((err) => {
         console.log('Error uploading post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
-        throw mediaUploadResponse.err;
-      }
+        throw err;
+      });
 
-      const mediaIdStr = mediaUploadResponse.data.media_id_string;
+      const mediaIdStr = data.media_id_string;
       const meta_params = { media_id: mediaIdStr };
       await this.createMedia(meta_params);
 
@@ -72,12 +69,10 @@ class Bot {
   }
 
   async createMedia(meta_params) {
-    const mediaCreateResponse = await this.twitter.post('media/metadata/create', meta_params);
-
-    if (mediaCreateResponse.err) {
+    const { res } = await this.twitter.post('media/metadata/create', meta_params).catch((err) => {
       console.log('Error creating post media. Image: ' + post.imageURL + ' from post: ' + post.elementId);
-      throw mediaCreateResponse.err;
-    }
+      throw err;
+    });
   }
 }
 
